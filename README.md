@@ -1,6 +1,6 @@
 # `LiveInvoke`
 
-This project is the result of an AI hackaton using various agents. I wanted to design an extension that allowed debugging of powershell scripts, without getting into any pre-setup steps like you have to use if you want to use the `launch.json` to debug a powershell script.
+This project is the result of an AI hackathon using various agents. I wanted to design an extension that allowed debugging of powershell scripts, without getting into any pre-setup steps like you have to use if you want to use the `launch.json` to debug a powershell script.
 
 ![Example](example.gif)
 
