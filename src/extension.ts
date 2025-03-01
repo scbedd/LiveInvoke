@@ -42,7 +42,7 @@ function generateLaunchConfig(functionName: string, originFile: string): any {
     const scriptPath: string = createPowerShellFile(functionName, originFile);
     const launchConfig = {
         ...extensionConfig,
-        "script": originFile
+        "script": scriptPath
     };
 
     return launchConfig;
@@ -155,10 +155,9 @@ function isPowerShellFile(document: vscode.TextDocument): boolean {
 function analyzePowerShellDocument(document: vscode.TextDocument): PowerShellFunction[] {
     const functions: PowerShellFunction[] = [];
 
-    // Simple regex to find function declarations
-    // In a real implementation, this would be more robust
-    const functionRegex = /function\s+([a-zA-Z0-9\-_]+)\s*(?:\(.*\))?\s*{/g;
-    const advancedFunctionRegex = /(?:function)\s+([a-zA-Z0-9\-_]+)\s*{[\s\S]*?\[CmdletBinding/g;
+    // Updated regex to find function declarations with both lowercase and uppercase F
+    const functionRegex = /[fF]unction\s+([a-zA-Z0-9\-_]+)\s*(?:\(.*\))?\s*{/g;
+    const advancedFunctionRegex = /(?:[fF]unction)\s+([a-zA-Z0-9\-_]+)\s*{[\s\S]*?\[CmdletBinding/g;
 
     const text = document.getText();
     let match;
@@ -231,7 +230,7 @@ class PowerShellCodeLensProvider implements vscode.CodeLensProvider {
                 );
 
                 const runLens = new vscode.CodeLens(range, {
-                    title: '▶️ Run',
+                    title: '▶️ Debug',
                     command: 'liveinvoke.runPowerShellCode',
                     arguments: [func.name, func.startLine, func.endLine, document.uri.fsPath]
                 });
@@ -262,30 +261,10 @@ async function runPowerShellCode(functionName: string, startLine: number, endLin
 
         // Show a status message
         vscode.window.showInformationMessage(`Running function: ${functionName}`);
-
-        // // Prepare the debug configuration
-        // const launchConfig = await getLaunchConfiguration();
-        // if (!launchConfig) {
-        //     vscode.window.showErrorMessage('No suitable PowerShell debug configuration found in launch.json');
-        //     return;
-        // }
-
-        // // Extract the function code to be executed
-        // const document = editor.document;
-        // const startPosition = new vscode.Position(startLine, 0);
-        // const endPosition = new vscode.Position(endLine, document.lineAt(endLine).text.length);
-        // const functionCode = document.getText(new vscode.Range(startPosition, endPosition));
-
-        // // Modify the launch configuration with the function to execute
-        // const modifiedConfig = {
-        //     ...launchConfig,
-        //     // Adding the function code to the script arguments or script to be executed
-        //     // This approach may need to be adjusted based on the specific launch.json structure
-        //     args: [...(launchConfig.args || []), `-Command`, `${functionCode}; ${functionName}`]
-        // };
+        const config = generateLaunchConfig(functionName, filePath);
 
         // // Start debugging with the modified configuration
-        // vscode.debug.startDebugging(undefined, modifiedConfig);
+        vscode.debug.startDebugging(undefined, config);
     } catch (error) {
         vscode.window.showErrorMessage(`Error running PowerShell code: ${error}`);
     }
