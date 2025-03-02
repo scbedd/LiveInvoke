@@ -12,6 +12,9 @@ interface PowerShellFunction {
     isAdvancedFunction: boolean;
 }
 
+// Track which functions have argument overlays displayed
+const activeOverlays = new Map<string, vscode.WebviewPanel>();
+
 const extensionConfig: any = {
     "name": "LiveInvoke",
     "type": "PowerShell",
@@ -88,6 +91,13 @@ function setupPowerShellFileHandling(context: vscode.ExtensionContext) {
         runPowerShellCode(functionName, startLine, endLine, filePath);
     });
     context.subscriptions.push(runCodeCommand);
+
+    // Register command to show function arguments overlay
+    const showArgsCommand = vscode.commands.registerCommand('liveinvoke.showFunctionArguments',
+        (functionName: string, startLine: number, endLine: number, filePath: string) => {
+        showFunctionArgumentsOverlay(functionName, startLine, endLine, filePath);
+    });
+    context.subscriptions.push(showArgsCommand);
 
     // Watch for PowerShell file opening
     const powerShellFileWatcher = vscode.workspace.onDidOpenTextDocument((document) => {
@@ -236,13 +246,21 @@ class PowerShellCodeLensProvider implements vscode.CodeLensProvider {
                     new vscode.Position(func.startLine, 0)
                 );
 
+                // Debug lens
                 const runLens = new vscode.CodeLens(range, {
                     title: '▶️ Debug',
                     command: 'liveinvoke.runPowerShellCode',
                     arguments: [func.name, func.startLine, func.endLine, document.uri.fsPath]
                 });
 
-                lenses.push(runLens);
+                // Arguments lens (with down arrow)
+                const argsLens = new vscode.CodeLens(range, {
+                    title: 'Arguments ▼',
+                    command: 'liveinvoke.showFunctionArguments',
+                    arguments: [func.name, func.startLine, func.endLine, document.uri.fsPath]
+                });
+
+                lenses.push(runLens, argsLens);
 
                 // Mark this function as processed
                 this.processedFunctions.set(functionKey, 1);
@@ -255,6 +273,128 @@ class PowerShellCodeLensProvider implements vscode.CodeLensProvider {
     // Method to signal that code lenses need to be refreshed
     refresh(): void {
         this._onDidChangeCodeLenses.fire();
+    }
+}
+
+// New function to show the arguments overlay
+function showFunctionArgumentsOverlay(functionName: string, startLine: number, endLine: number, filePath: string) {
+    try {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            vscode.window.showErrorMessage('No active editor found.');
+            return;
+        }
+
+        // Create a unique identifier for this function
+        const functionKey = `${filePath}:${functionName}:${startLine}`;
+
+        // Check if we already have an overlay for this function
+        if (activeOverlays.has(functionKey)) {
+            // Focus the existing overlay
+            activeOverlays.get(functionKey)?.reveal();
+            return;
+        }
+
+        // Create a webview panel for our overlay
+        const panel = vscode.window.createWebviewPanel(
+            'argumentsOverlay',
+            `Arguments for ${functionName}`,
+            vscode.ViewColumn.Beside,
+            {
+                enableScripts: true,
+                localResourceRoots: [],
+                retainContextWhenHidden: true
+            }
+        );
+
+        // Track this overlay
+        activeOverlays.set(functionKey, panel);
+
+        // When the panel is closed, remove it from our tracking map
+        panel.onDidDispose(() => {
+            activeOverlays.delete(functionKey);
+        });
+
+        // Create the UI content
+        const content = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {
+                    font-family: var(--vscode-font-family);
+                    padding: 10px;
+                }
+                .argument-row {
+                    display: flex;
+                    margin-bottom: 10px;
+                    align-items: center;
+                }
+                .argument-label {
+                    width: 150px;
+                }
+                .argument-value {
+                    flex-grow: 1;
+                    height: 24px;
+                    border: 1px solid var(--vscode-input-border);
+                    background-color: var(--vscode-input-background);
+                    color: var(--vscode-input-foreground);
+                    padding: 0 5px;
+                }
+                .close-button {
+                    position: absolute;
+                    top: 5px;
+                    right: 5px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    padding: 5px;
+                    border: none;
+                    background: transparent;
+                    font-size: 16px;
+                    color: var(--vscode-editor-foreground);
+                }
+                h3 {
+                    margin-top: 0;
+                }
+            </style>
+        </head>
+        <body>
+            <button class="close-button" id="closeBtn">✖</button>
+            <h3>Arguments for ${functionName}</h3>
+
+            <div class="argument-row">
+                <span class="argument-label">Argument:</span>
+                <input type="text" class="argument-value" />
+            </div>
+            <div class="argument-row">
+                <span class="argument-label">Value:</span>
+                <input type="text" class="argument-value" />
+            </div>
+
+            <script>
+                const closeBtn = document.getElementById('closeBtn');
+                closeBtn.addEventListener('click', () => {
+                    // Tell VS Code to close the panel
+                    const vscode = acquireVsCodeApi();
+                    vscode.postMessage({ command: 'close' });
+                });
+            </script>
+        </body>
+        </html>
+        `;
+
+        // Set the webview's HTML content
+        panel.webview.html = content;
+
+        // Handle messages from the webview
+        panel.webview.onDidReceiveMessage(message => {
+            if (message.command === 'close') {
+                panel.dispose();
+            }
+        });
+
+    } catch (error) {
+        vscode.window.showErrorMessage(`Error showing function arguments: ${error}`);
     }
 }
 
