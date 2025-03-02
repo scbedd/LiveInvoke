@@ -2,7 +2,7 @@
 
 This project is the result of an AI hackathon using various agents. I wanted to design an extension that allowed debugging of powershell scripts, without getting into any pre-setup steps like you have to use if you want to use the `launch.json` to debug a powershell script.
 
-![image](https://github.com/user-attachments/assets/a148fd20-dbf1-47be-9164-097894e528ed)
+![example](https://github.com/user-attachments/assets/89933d76-8cc6-4947-9161-309cb9acaf4d)
 
 ## How to use
 
