@@ -1,13 +1,19 @@
 # `LiveInvoke`
 
-This project is the result of an AI hackathon using various agents. I wanted to design an extension that allowed debugging of powershell scripts, without getting into any pre-setup steps like you have to use if you want to use the `launch.json` to debug a powershell script.
+This project is the result of an AI hackathon using various agents. It is an extension that allows debugging of powershell scripts without futzing about with the `launch.json`.
 
 ![Example](example.gif)
+
+## Requires
+
+- The `powershell` vscode extension. Otherwise the debug profile that is created and launched by _this_ extension will fail.
 
 ## How to use
 
 - Install the extension
-- open a powershell function in vscode
+- Open a powershell file in `vscode`
+- Place breakpoints
+- Click the play button over functions
 
 ## Todo
 
@@ -16,5 +22,8 @@ This project is the result of an AI hackathon using various agents. I wanted to 
 - [x] Dynamically create an update the `launch.json` for a workspace to add the necessary `invoke`.
 - [x] Create the local file necessary to actually run your app
 - [x] Able to debug simple functions with a single click
+- [x] Move generated script file out of the local repository
+- [ ] Publish github release
+- [ ] Allow setting of arguments, triggerable by codelens UI
 - [ ] Should the working directory be updated so that when we call launch.json profile it changes working dir to the one containing the script?
-- [ ] Allow setting of arguments via a temporary codelens UI
+- [ ] Publish as actual extension
