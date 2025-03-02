@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto')
+const crypto = require('crypto');
 import * as os from 'os';
 
 // PowerShell function analysis type

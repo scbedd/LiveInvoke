@@ -3,6 +3,10 @@
   "displayName": "LiveInvoke",
   "description": "A helper built on top of the powershell extension. Intended to allow easy in-place debugging of any function or script.",
   "version": "0.0.1",
+  "author": {
+    "name": "Scott Beddall",
+    "email": "scbedd@microsoft.com"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/scbedd/LiveInvoke.git"
