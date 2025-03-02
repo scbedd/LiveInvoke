@@ -23,6 +23,8 @@ This project is the result of an AI hackathon using various agents. It is an ext
 - [x] Create the local file necessary to actually run your app
 - [x] Able to debug simple functions with a single click
 - [x] Move generated script file out of the local repository
+- [ ] Support powershell modules
+- [ ] Support importing a totally different file via comment (Support for `Language-Settings` by importing `common.ps1`)
 - [ ] Publish github release
 - [ ] Allow setting of arguments, triggerable by codelens UI
 - [ ] Should the working directory be updated so that when we call launch.json profile it changes working dir to the one containing the script?

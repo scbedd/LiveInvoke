@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto')
+import * as os from 'os';
 
 // PowerShell function analysis type
 interface PowerShellFunction {
@@ -24,8 +26,13 @@ function createPowerShellFile(functionName: string, originFile: string): string 
         return '';
     }
 
-    const rootPath = workspaceFolder.uri.fsPath;
-    const filePath = path.join(rootPath, `liveinvoke.ps1`);
+    const tempFolder = os.tmpdir();
+
+    const scriptName = crypto.createHash('sha256')
+    .update(functionName + originFile, 'utf8')
+    .digest('hex') + '.ps1';
+
+    const filePath = path.join(tempFolder, scriptName);
 
     // Basic file contents (you can adjust this as needed)
     const fileContents = `. "${originFile}"
