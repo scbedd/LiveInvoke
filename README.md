@@ -2,7 +2,7 @@
 
 This project is the result of an AI hackathon using various agents. It is an extension that allows debugging of powershell scripts without futzing about with the `launch.json`.
 
-![Example](example.gif)
+![image](https://github.com/user-attachments/assets/a148fd20-dbf1-47be-9164-097894e528ed)
 
 ## Requires
 
