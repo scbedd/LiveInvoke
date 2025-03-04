@@ -22,6 +22,13 @@ const extensionConfig: any = {
     "script": "{dynamic}"
 };
 
+// Store argument values for each function
+// Key: <filePath>:<functionName>:<startLine>, Value: Map of argument name to value
+const functionArguments = new Map<string, Map<string, string>>();
+
+// Reference to the CodeLens provider for triggering refreshes
+let codeLensProvider: PowerShellCodeLensProvider | null = null;
+
 function createPowerShellFile(functionName: string, originFile: string): string {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (!workspaceFolder) {
@@ -133,33 +140,20 @@ function setupPowerShellFileHandling(context: vscode.ExtensionContext) {
     context.subscriptions.push(docChangeWatcher);
 
     // IMPORTANT: Register code lens provider ONLY ONCE
+    const provider = new PowerShellCodeLensProvider();
+    codeLensProvider = provider; // Store reference for refreshes
+
     const decorationProvider = vscode.languages.registerCodeLensProvider(
         { language: 'powershell', scheme: 'file' },
-        new PowerShellCodeLensProvider()
+        provider
     );
     context.subscriptions.push(decorationProvider);
 }
 
-// Replace the entire function with a simpler version that doesn't register additional providers
+// Replace with a proper CodeLens refresh function
 function triggerCodeLensRefresh(): void {
-    // Force VS Code to refresh code lenses for the current editor
-    const editor = vscode.window.activeTextEditor;
-    if (editor && isPowerShellFile(editor.document)) {
-        try {
-            // Use a tiny edit and immediately undo it to trigger a refresh
-            const position = new vscode.Position(0, 0);
-            const edit = new vscode.WorkspaceEdit();
-            const uri = editor.document.uri;
-
-            // Only do this if we can edit the file (not readonly)
-            if (!editor.document.isUntitled && !editor.document.uri.scheme.includes('git')) {
-                // No actual text change, just a nudge to the file
-                vscode.commands.executeCommand('editor.action.triggerEditorAction', 'editor.action.triggerSuggest')
-                    .then(() => vscode.commands.executeCommand('editor.action.triggerSuggest.cancel'));
-            }
-        } catch (error) {
-            console.error('Error refreshing code lenses:', error);
-        }
+    if (codeLensProvider) {
+        codeLensProvider.refresh();
     }
 }
 
