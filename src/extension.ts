@@ -10,6 +10,7 @@ interface PowerShellFunction {
     startLine: number;
     endLine: number;
     isAdvancedFunction: boolean;
+    entrypoint: boolean;
 }
 
 // Track which functions have argument overlays displayed
@@ -94,8 +95,8 @@ export function activate(context: vscode.ExtensionContext) {
 function setupPowerShellFileHandling(context: vscode.ExtensionContext) {
     // Register command to run PowerShell code
     const runCodeCommand = vscode.commands.registerCommand('liveinvoke.runPowerShellCode',
-        (functionName: string, startLine: number, endLine: number, filePath: string) => {
-        runPowerShellCode(functionName, startLine, endLine, filePath);
+        (func: PowerShellFunction, filePath: string) => {
+        runPowerShellCode(func, filePath);
     });
     context.subscriptions.push(runCodeCommand);
 
@@ -169,9 +170,27 @@ function analyzePowerShellDocument(document: vscode.TextDocument): PowerShellFun
     // Updated regex to find function declarations with both lowercase and uppercase F
     const functionRegex = /[fF]unction\s+([a-zA-Z0-9\-_]+)\s*(?:\(.*\))?\s*{/g;
     const advancedFunctionRegex = /(?:[fF]unction)\s+([a-zA-Z0-9\-_]+)\s*{[\s\S]*?\[CmdletBinding/g;
-
+    const entryRegex = /^\s*((?:<#[\s\S]*?#>)|(?:#.*$)|\s*)*\s*param\s*\(/;
     const text = document.getText();
     let match;
+
+    // detect script level regex
+    match = entryRegex.exec(text);
+    if (match) {
+        const entrypoint = match[0].trim();
+        if (entrypoint) {
+            const startPos = document.positionAt(match.index);
+            const startLine = startPos.line;
+            functions.push({
+                name: 'Script Entry Point',
+                startLine,
+                endLine: startLine,
+                isAdvancedFunction: false,
+                entrypoint: true
+            });
+        }
+        return functions;
+    }
 
     // Find regular functions
     while ((match = functionRegex.exec(text)) !== null) {
@@ -202,7 +221,8 @@ function analyzePowerShellDocument(document: vscode.TextDocument): PowerShellFun
             name: functionName,
             startLine,
             endLine,
-            isAdvancedFunction: isAdvanced
+            isAdvancedFunction: isAdvanced,
+            entrypoint: false
         });
     }
 
@@ -244,7 +264,7 @@ class PowerShellCodeLensProvider implements vscode.CodeLensProvider {
                 const runLens = new vscode.CodeLens(range, {
                     title: '▶️ Debug',
                     command: 'liveinvoke.runPowerShellCode',
-                    arguments: [func.name, func.startLine, func.endLine, document.uri.fsPath]
+                    arguments: [func, document.uri.fsPath]
                 });
 
                 // Arguments lens (with down arrow)
@@ -392,8 +412,10 @@ function showFunctionArgumentsOverlay(functionName: string, startLine: number, e
     }
 }
 
-async function runPowerShellCode(functionName: string, startLine: number, endLine: number, filePath: string) {
+async function runPowerShellCode(func: PowerShellFunction, filePath: string) {
     try {
+        const functionName = func.name;
+
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             vscode.window.showErrorMessage('No active editor found.');
